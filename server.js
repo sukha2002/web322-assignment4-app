@@ -7,9 +7,9 @@ Policy. No part
 *
 * Name: Sukhmandeep Singh Kahlon Student ID: 155832207 Date: 25-03-2022
 *
-* Online (Heroku) Link: 
+* Online (Heroku) Link: https://lit-retreat-42279.herokuapp.com
 *
-* Online (Github) Link: 
+* Online (Github) Link: https://github.com/sukha2002/web322-assignment4-app.git
 *
 ********************************************************************************/
 const express = require("express");
