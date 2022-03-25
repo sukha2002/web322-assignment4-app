@@ -1,28 +1,27 @@
 /*********************************************************************************
-* WEB322 – Assignment 04
+* WEB322 – Assignment 05
 * I declare that this assignment is my own work in accordance with Seneca Academic
 Policy. No part
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: Sukhmandeep Singh Kahlon Student ID: 155832207 Date: 11-03-2022
+* Name: Sukhmandeep Singh Kahlon Student ID: 155832207 Date: 25-03-2022
 *
-* Online (Heroku) Link: https://lit-retreat-42279.herokuapp.com
+* Online (Heroku) Link: 
 *
-* Online (Github) Link: https://github.com/sukha2002/web322-assignment4-app.git
+* Online (Github) Link: 
 *
 ********************************************************************************/
 const express = require("express");
 var path = require("path");
-const posts = require("./data/posts.json");
 const blogService = require('./blog-service.js');
-const categories = require("./data/categories.json");
 const app = express();
 const exphbs = require("express-handlebars");
 const stripJs = require('strip-js');
 const multer = require("multer")
 const cloudinary = require('cloudinary').v2
-const streamifier = require('streamifier')
+const streamifier = require('streamifier');
+app.use(express.urlencoded({extended: true}));
 
 cloudinary.config({
   cloud_name: 'dos8fvnk4',
@@ -50,7 +49,13 @@ app.engine('.hbs', exphbs.engine({
      },
      safeHTML: function(context){
       return stripJs(context);
-     }     
+     },
+     formatDate: function(dateObj){
+      let year = dateObj.getFullYear();
+      let month = (dateObj.getMonth() + 1).toString();
+      let day = dateObj.getDate().toString();
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
+     }
   }
 }));
 app.set("view engine", ".hbs");
@@ -84,7 +89,34 @@ app.get("/about", function(req,res){
 });
 
 app.get("/posts/add", function(req,res){
-   res.render("addPost");
+  blogService.getCategories().then(function (data) {
+    res.render("addPost", {categories: data});
+  })
+  .catch(function (error) {
+    res.render("addPost", {categories: []});      
+  });
+});
+
+app.get("/categories/add", function(req,res){
+  res.render("addCategory");
+});
+
+app.get("/categories/delete/:id", function(req,res){
+  blogService.deleteCategoryById(req.params.id).then(function () {
+    res.redirect("/categories");
+  })
+  .catch(function (error) {
+    res.status(500).send("Unable to Remove Category / Category not found");
+  });
+});
+
+app.get("/posts/delete/:id", function(req,res){
+  blogService.deletePostById(req.params.id).then(function () {
+    res.redirect("/posts");
+  })
+  .catch(function (error) {
+    res.status(500).send("Unable to Remove Post / Post not found");
+  });
 });
 
 app.get('/blog', async (req, res) => {
@@ -138,21 +170,36 @@ app.get('/blog', async (req, res) => {
 app.get("/posts", function(req,res){
   if(req.query.category) {
     blogService.getPostsByCategory(req.query.category).then((result) => {
-      res.render("posts", {posts: result});
+      if(result.length > 0) {
+        res.render("posts", {posts: result});
+      }
+      else {
+        res.render("posts", {message: "no results"});
+      }
     }).catch((err) => {
       res.render("posts", {message: "no results"});
     });
   }
   else if(req.query.minDate) {
     blogService.getPostsByMinDate(req.query.minDate).then((result) => {
-      res.render("posts", {posts: result})
+      if(result.length > 0) {
+        res.render("posts", {posts: result});
+      }
+      else {
+        res.render("posts", {message: "no results"});
+      }
     }).catch((err) => {
       res.render("posts", {message: "no results"});
     });
   }
   else {
     blogService.getAllPosts().then((result) => {
-      res.render("posts", {posts: result})
+      if(result.length > 0) {
+        res.render("posts", {posts: result});
+      }
+      else {
+        res.render("posts", {message: "no results"});
+      }
     }).catch((err) => {
       res.render("posts", {message: "no results"});
     });
@@ -211,7 +258,12 @@ app.get('/blog/:id', async (req, res) => {
 
 app.get("/categories", function(req,res){
     blogService.getCategories().then((result) => {
-      res.render("categories", {categories: result});
+      if(result.length > 0) {
+        res.render("categories", {categories: result});
+      }
+      else {
+        res.render("categories", {message: "no results"});
+      }
   }).catch((err) => {
     res.render("categories", {message: "no results"});
   });
@@ -242,6 +294,12 @@ app.post('/posts/add', upload.single('featureImage'), function (req, res, next) 
     blogService.addPost(formData);
     res.redirect("/posts");   
   });
+});
+
+app.post('/categories/add', function (req, res) {
+  const formData = req.body;
+  blogService.addCategory(formData);
+  res.redirect("/categories");
 });
 
 app.use((req, res) => {
